@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HiTech Bank — Blockchain</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{"primary":"#005bbf","primary-container":"#1a73e8","on-primary":"#ffffff","surface":"#f8f9fa","surface-container-low":"#f3f4f5","surface-container-lowest":"#ffffff","surface-container-high":"#e7e8e9","surface-container":"#edeeef","surface-container-highest":"#e1e3e4","on-surface":"#191c1d","on-surface-variant":"#414754","outline-variant":"#c1c6d6","error":"#ba1a1a","error-container":"#ffdad6","secondary":"#5b5f64","tertiary-fixed":"#ffdbcb","on-tertiary-fixed-variant":"#783100"},fontFamily:{"headline":["Manrope"],"body":["Inter"]}}}}
+</script>
+<style>
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;}
+.signature-gradient{background:linear-gradient(135deg,#005bbf 0%,#1a73e8 100%);}
+.modal-overlay{position:fixed;inset:0;background:rgba(25,28,29,0.5);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;}
+.chain-link::before{content:'';position:absolute;left:50%;top:-24px;width:2px;height:24px;background:linear-gradient(to bottom,transparent,#005bbf);transform:translateX(-50%);}
+.tab-active{background:linear-gradient(135deg,#005bbf,#1a73e8);color:white;}
+.tab-inactive{background:#f3f4f5;color:#414754;}
+</style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+{% include 'navbar.html' %}
+
+<main class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl font-bold font-headline">Blockchain & Admin</h1>
+      <p class="text-on-surface-variant mt-1">Live chain view, audit logs, and fraud detection</p>
+    </div>
+    <div id="integrity-badge" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-surface-container-high">
+      <div class="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      Verifying chain...
+    </div>
+  </div>
+
+  <!-- Tab selector -->
+  <div class="flex rounded-2xl overflow-hidden mb-8 p-1 bg-surface-container-low gap-1 max-w-lg">
+    <button onclick="switchTab('blockchain')" id="tab-blockchain" class="flex-1 py-2.5 rounded-xl font-bold text-sm tab-active transition-all flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined text-base">link</span> Blockchain
+    </button>
+    <button onclick="switchTab('audit')" id="tab-audit" class="flex-1 py-2.5 rounded-xl font-bold text-sm tab-inactive transition-all flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined text-base">fact_check</span> Audit Logs
+    </button>
+    <button onclick="switchTab('users')" id="tab-users" class="flex-1 py-2.5 rounded-xl font-bold text-sm tab-inactive transition-all flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined text-base">group</span> Users
+    </button>
+  </div>
+
+  <!-- BLOCKCHAIN TAB -->
+  <div id="tab-blockchain-content">
+    <div id="blockchain-loading" class="flex items-center justify-center p-12 text-on-surface-variant">
+      <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mr-3"></div>
+      Loading blockchain...
+    </div>
+    <div id="blockchain-content" class="hidden flex flex-col gap-6"></div>
+  </div>
+
+  <!-- AUDIT LOG TAB -->
+  <div id="tab-audit-content" class="hidden">
+    <div id="audit-loading" class="flex items-center justify-center p-12 text-on-surface-variant">
+      <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mr-3"></div>
+      Loading audit logs...
+    </div>
+    <div id="audit-content" class="hidden">
+      <div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-surface-container-low">
+              <th class="text-left p-4 font-bold text-on-surface-variant text-xs uppercase tracking-wider">Time</th>
+              <th class="text-left p-4 font-bold text-on-surface-variant text-xs uppercase tracking-wider">User</th>
+              <th class="text-left p-4 font-bold text-on-surface-variant text-xs uppercase tracking-wider">Action</th>
+              <th class="text-left p-4 font-bold text-on-surface-variant text-xs uppercase tracking-wider">Details</th>
+            </tr>
+          </thead>
+          <tbody id="audit-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- USERS TAB -->
+  <div id="tab-users-content" class="hidden">
+    <div id="users-loading" class="flex items-center justify-center p-12 text-on-surface-variant">
+      <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mr-3"></div>
+      Loading users...
+    </div>
+    <div id="users-content" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </div>
+</main>
+
+<!-- Block Detail Modal -->
+<div id="block-modal" class="modal-overlay hidden">
+  <div class="bg-surface-container-lowest rounded-3xl p-8 w-full max-w-2xl shadow-[0px_8px_24px_rgba(25,28,29,0.12)] max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-bold text-xl font-headline" id="block-modal-title">Block Details</h3>
+      <button onclick="document.getElementById('block-modal').classList.add('hidden')" class="p-2 rounded-xl hover:bg-surface-container-high">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="block-modal-content"></div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+
+function _jwtPayload(tok) {
+  try {
+    const b = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const pad = b.length % 4 ? '='.repeat(4 - (b.length % 4)) : '';
+    return JSON.parse(atob(b + pad));
+  } catch (e) { return {}; }
+}
+if (!_jwtPayload(token).is_admin) window.location.href = '/dashboard';
+
+let blockchainData = [];
+let currentTab = 'blockchain';
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['blockchain','audit','users'].forEach(t => {
+    document.getElementById(`tab-${t}-content`).classList.toggle('hidden', t !== tab);
+    const btn = document.getElementById(`tab-${t}`);
+    btn.className = `flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${t===tab?'tab-active':'tab-inactive'}`;
+  });
+
+  if (tab === 'audit' && !document.getElementById('audit-content').classList.contains('hidden') === false) {
+    loadAuditLogs();
+  }
+  if (tab === 'users') loadUsers();
+}
+
+async function loadBlockchain() {
+  const endpoint = user.is_admin ? '/api/admin/blockchain' : '/api/blockchain/blocks';
+  const res = await fetch(endpoint, { headers: {'Authorization': `Bearer ${token}`} });
+
+  if (!res.ok) {
+    document.getElementById('blockchain-loading').innerHTML = `<div class="text-error">Access denied or error loading blockchain</div>`;
+    return;
+  }
+
+  let data;
+  if (user.is_admin) {
+    data = await res.json();
+    blockchainData = data.blocks;
+    showIntegrity(data.integrity);
+  } else {
+    blockchainData = await res.json();
+    loadIntegrity();
+  }
+
+  renderBlockchain();
+}
+
+async function loadIntegrity() {
+  const res = await fetch('/api/blockchain/verify', { headers: {'Authorization': `Bearer ${token}`} });
+  if (res.ok) { const data = await res.json(); showIntegrity(data); }
+}
+
+function showIntegrity(data) {
+  const badge = document.getElementById('integrity-badge');
+  if (data.valid) {
+    badge.className = 'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-primary/10 text-primary';
+    badge.innerHTML = `<span class="material-symbols-outlined text-base">verified</span> Chain Intact`;
+  } else {
+    badge.className = 'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-error-container text-error';
+    badge.innerHTML = `<span class="material-symbols-outlined text-base">warning</span> Tampering Detected!`;
+  }
+}
+
+function renderBlockchain() {
+  document.getElementById('blockchain-loading').classList.add('hidden');
+  const container = document.getElementById('blockchain-content');
+  container.classList.remove('hidden');
+
+  if (!blockchainData || blockchainData.length === 0) {
+    container.innerHTML = `<div class="text-center text-on-surface-variant py-12">No blocks yet. Make a transaction to start the chain.</div>`;
+    return;
+  }
+
+  container.innerHTML = blockchainData.map((block, idx) => `
+    <div class="relative ${idx > 0 ? 'chain-link' : ''}">
+      <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-[0px_4px_12px_rgba(25,28,29,0.06)] cursor-pointer hover:shadow-md transition-shadow"
+           onclick="showBlockDetail(${block.block_number})">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl signature-gradient flex items-center justify-center text-white font-bold text-lg font-headline">
+              ${block.block_number}
+            </div>
+            <div>
+              <p class="font-bold text-lg font-headline">Block #${block.block_number}</p>
+              <p class="text-xs text-on-surface-variant">${new Date(block.created_at).toLocaleString('en-IN')}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="px-3 py-1 rounded-full text-xs font-bold ${block.total_transactions >= 15 ? 'bg-primary/10 text-primary' : 'bg-tertiary-fixed text-on-tertiary-fixed-variant'}">
+              ${block.total_transactions}/15 TXs
+            </div>
+            <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="bg-surface-container-low rounded-xl p-3">
+            <p class="text-xs text-on-surface-variant uppercase tracking-wider font-bold mb-1">Prev Hash</p>
+            <p class="text-xs font-mono text-on-surface truncate">${block.prev_hash || '0'}</p>
+          </div>
+          <div class="bg-surface-container-low rounded-xl p-3">
+            <p class="text-xs text-on-surface-variant uppercase tracking-wider font-bold mb-1">Current Hash</p>
+            <p class="text-xs font-mono text-primary truncate">${block.current_hash || 'Computing...'}</p>
+          </div>
+        </div>
+
+        ${block.transactions && block.transactions.length > 0 ? `
+        <div class="mt-4 flex flex-wrap gap-2">
+          ${block.transactions.slice(0,5).map(tx => `
+            <div class="text-xs bg-surface-container-high px-2 py-1 rounded-lg text-on-surface-variant font-mono">
+              #${tx.id}: ${tx.sender_id}→${tx.receiver_id} ₹${parseFloat(tx.amount).toLocaleString('en-IN')}
+            </div>
+          `).join('')}
+          ${block.transactions.length > 5 ? `<div class="text-xs bg-surface-container-high px-2 py-1 rounded-lg text-on-surface-variant">+${block.transactions.length - 5} more</div>` : ''}
+        </div>` : ''}
+      </div>
+    </div>
+  `).join('<div class="flex justify-center"><div class="w-0.5 h-8 bg-primary/20"></div></div>');
+}
+
+function showBlockDetail(blockNumber) {
+  const block = blockchainData.find(b => b.block_number === blockNumber);
+  if (!block) return;
+
+  document.getElementById('block-modal-title').textContent = `Block #${blockNumber} Details`;
+  document.getElementById('block-modal-content').innerHTML = `
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-surface-container-low rounded-xl p-3">
+          <p class="text-xs text-on-surface-variant uppercase tracking-wider font-bold mb-1">Block Number</p>
+          <p class="font-bold font-headline text-lg">#${block.block_number}</p>
+        </div>
+        <div class="bg-surface-container-low rounded-xl p-3">
+          <p class="text-xs text-on-surface-variant uppercase tracking-wider font-bold mb-1">Transactions</p>
+          <p class="font-bold font-headline text-lg">${block.total_transactions}/15</p>
+        </div>
+      </div>
+      <div class="bg-surface-container-low rounded-xl p-4">
+        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-bold mb-2">Previous Hash</p>
+        <p class="text-xs font-mono break-all text-on-surface">${block.prev_hash || '0 (Genesis)'}</p>
+      </div>
+      <div class="bg-primary/5 rounded-xl p-4">
+        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-bold mb-2 flex items-center gap-1">
+          <span class="material-symbols-outlined text-primary text-sm">tag</span> Current Hash (SHA-256)
+        </p>
+        <p class="text-xs font-mono break-all text-primary">${block.current_hash}</p>
+      </div>
+      <div class="bg-surface-container-low rounded-xl p-4">
+        <p class="text-xs text-on-surface-variant uppercase tracking-wider font-bold mb-3">Transactions in Block</p>
+        <div class="space-y-2">
+          ${block.transactions && block.transactions.length > 0 ?
+            block.transactions.map(tx => `
+              <div class="flex items-center gap-3 p-2 bg-surface-container-lowest rounded-lg">
+                <span class="text-xs text-on-surface-variant font-mono w-6">#${tx.id}</span>
+                <span class="text-xs font-bold text-on-surface">User ${tx.sender_id} → User ${tx.receiver_id}</span>
+                <span class="ml-auto text-xs font-bold text-primary font-headline">₹${parseFloat(tx.amount).toLocaleString('en-IN')}</span>
+              </div>
+            `).join('') :
+            '<p class="text-xs text-on-surface-variant">No transaction data available</p>'
+          }
+        </div>
+      </div>
+      <p class="text-xs text-on-surface-variant text-center">${new Date(block.created_at).toLocaleString('en-IN')}</p>
+    </div>
+  `;
+  document.getElementById('block-modal').classList.remove('hidden');
+}
+
+async function loadAuditLogs() {
+  document.getElementById('audit-loading').classList.remove('hidden');
+  document.getElementById('audit-content').classList.add('hidden');
+
+  const res = await fetch('/api/admin/audit-logs', { headers: {'Authorization': `Bearer ${token}`} });
+  document.getElementById('audit-loading').classList.add('hidden');
+  if (!res.ok) { return; }
+
+  const logs = await res.json();
+  const actionColors = {
+    'LOGIN': 'text-primary bg-primary/10',
+    'TRANSFER': 'text-on-surface bg-surface-container-high',
+    'BALANCE_CHECK': 'text-secondary bg-surface-container-high',
+    'SIGNUP': 'text-primary bg-primary/10',
+    'FAILED_TRANSFER': 'text-error bg-error-container'
+  };
+
+  document.getElementById('audit-table-body').innerHTML = logs.map(log => `
+    <tr class="border-t border-outline-variant/10 hover:bg-surface-container-low transition-colors">
+      <td class="p-4 text-xs text-on-surface-variant">${new Date(log.created_at).toLocaleString('en-IN')}</td>
+      <td class="p-4 text-xs font-bold text-on-surface">User #${log.user_id}</td>
+      <td class="p-4">
+        <span class="px-2 py-1 rounded-full text-xs font-bold ${actionColors[log.action] || 'text-on-surface bg-surface-container-high'}">${log.action}</span>
+      </td>
+      <td class="p-4 text-xs text-on-surface-variant max-w-xs truncate">${log.details}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('audit-content').classList.remove('hidden');
+}
+
+async function loadUsers() {
+  document.getElementById('users-loading').classList.remove('hidden');
+  document.getElementById('users-content').classList.add('hidden');
+
+  const res = await fetch('/api/admin/users', { headers: {'Authorization': `Bearer ${token}`} });
+  document.getElementById('users-loading').classList.add('hidden');
+  if (!res.ok) { return; }
+
+  const users = await res.json();
+  const container = document.getElementById('users-content');
+  container.innerHTML = users.map(u => `
+    <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl signature-gradient flex items-center justify-center text-white font-bold">${u.name.charAt(0)}</div>
+        <div>
+          <p class="font-bold text-sm font-headline">${u.name}</p>
+          <p class="text-xs text-on-surface-variant">ID: ${u.id} · Bank ${u.bank_id === 1 ? 'A' : 'B'}</p>
+        </div>
+        ${u.is_admin ? '<div class="ml-auto"><span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">Admin</span></div>' : ''}
+      </div>
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs">
+          <span class="text-on-surface-variant">Phone</span>
+          <span class="font-mono font-bold">${u.phone}</span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-on-surface-variant">Balance</span>
+          <span class="font-bold text-primary font-headline">₹${parseFloat(u.balance).toLocaleString('en-IN')}</span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-on-surface-variant">Card</span>
+          <span class="font-mono">••••${u.card_number ? u.card_number.slice(-4) : '????'}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  container.classList.remove('hidden');
+}
+
+loadBlockchain();
+</script>
+</body>
+</html>

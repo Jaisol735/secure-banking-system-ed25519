@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HiTech Bank — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        "primary":"#005bbf","primary-container":"#1a73e8","on-primary":"#ffffff",
+        "surface":"#f8f9fa","surface-container-low":"#f3f4f5","surface-container-lowest":"#ffffff",
+        "surface-container-high":"#e7e8e9","surface-container":"#edeeef","surface-container-highest":"#e1e3e4",
+        "on-surface":"#191c1d","on-surface-variant":"#414754","outline-variant":"#c1c6d6",
+        "error":"#ba1a1a","error-container":"#ffdad6","secondary":"#5b5f64","tertiary":"#9e4300",
+        "tertiary-fixed":"#ffdbcb","on-tertiary-fixed-variant":"#783100"
+      },
+      fontFamily: {"headline":["Manrope"],"body":["Inter"]}
+    }
+  }
+}
+</script>
+<style>
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;}
+.signature-gradient{background:linear-gradient(135deg,#005bbf 0%,#1a73e8 100%);}
+.glass-panel{background:rgba(248,249,250,0.85);backdrop-filter:blur(24px);}
+.modal-overlay{position:fixed;inset:0;background:rgba(25,28,29,0.5);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;}
+.soft-field{background:#f3f4f5;border:none;border-bottom:2px solid transparent;transition:all 0.2s;}
+.soft-field:focus{background:#fff;border-bottom-color:#005bbf;outline:none;}
+.no-scrollbar::-webkit-scrollbar{display:none;}
+</style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+
+{% include 'navbar.html' %}
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-32">
+  <!-- Admin prompt banner (shown if admin needs to verify key) -->
+  <div id="admin-key-banner" class="hidden mb-6 bg-on-surface rounded-2xl p-4 flex items-center gap-4">
+    <span class="material-symbols-outlined text-white text-2xl">admin_panel_settings</span>
+    <div class="flex-1">
+      <p class="text-white font-bold text-sm">Admin Verification Required</p>
+      <p class="text-white/70 text-xs">Enter your admin access key to unlock admin features</p>
+    </div>
+    <input id="admin-key-input" type="password" placeholder="Admin Key" class="bg-white/10 text-white rounded-xl px-3 py-2 text-sm border-none focus:outline-none placeholder-white/50 w-36"/>
+    <button onclick="verifyAdminKey()" class="signature-gradient text-white px-4 py-2 rounded-xl text-sm font-bold">Verify</button>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Sidebar -->
+    <aside class="hidden lg:flex lg:col-span-3 flex-col h-fit sticky top-24 py-4 gap-3">
+      <div class="mb-4 px-4">
+        <h2 class="text-xs font-medium text-on-surface-variant font-label uppercase tracking-wider">Welcome back</h2>
+        <p class="text-xl font-bold font-headline mt-1" id="sidebar-name">...</p>
+        <p class="text-xs text-on-surface-variant mt-0.5" id="sidebar-bank">Bank ...</p>
+      </div>
+      <nav class="flex flex-col gap-1">
+        <a href="/dashboard" class="flex items-center gap-3 py-3 px-4 rounded-r-full text-primary font-bold bg-surface-container-lowest shadow-sm text-sm">
+          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">dashboard</span> Dashboard
+        </a>
+        <a href="/account" class="flex items-center gap-3 py-3 px-4 text-on-surface hover:bg-surface-container-high rounded-r-full transition-all text-sm">
+          <span class="material-symbols-outlined">manage_accounts</span> My Account
+        </a>
+        <a href="/transactions" class="flex items-center gap-3 py-3 px-4 text-on-surface hover:bg-surface-container-high rounded-r-full transition-all text-sm">
+          <span class="material-symbols-outlined">history</span> Transactions
+        </a>
+        <a href="/blockchain-view" class="admin-only hidden flex items-center gap-3 py-3 px-4 text-on-surface hover:bg-surface-container-high rounded-r-full transition-all text-sm">
+          <span class="material-symbols-outlined">link</span> Blockchain
+        </a>
+        <a href="/visualization" class="admin-only hidden flex items-center gap-3 py-3 px-4 text-on-surface hover:bg-surface-container-high rounded-r-full transition-all text-sm">
+          <span class="material-symbols-outlined">insights</span> Visualization
+        </a>
+      </nav>
+      <div class="mt-6 px-4">
+        <button onclick="openTransferModal()" class="w-full signature-gradient text-white font-bold py-3 px-6 rounded-full shadow-md active:scale-95 transition-all font-body flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-xl">send</span> Transfer Funds
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="lg:col-span-9 flex flex-col gap-6">
+      <!-- Balance Card -->
+      <section class="signature-gradient rounded-3xl p-6 text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-48 h-48 rounded-full opacity-10" style="background:radial-gradient(circle,white,transparent);transform:translate(30%,-30%)"></div>
+        <div class="relative z-10">
+          <div class="flex items-start justify-between mb-6">
+            <div>
+              <p class="text-white/70 text-xs font-medium uppercase tracking-wider">Total Balance</p>
+              <div id="balance-display" class="mt-2">
+                <p class="text-4xl font-bold font-headline">••••••</p>
+                <p class="text-white/60 text-sm mt-1">Verify PIN to view balance</p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <span class="material-symbols-outlined text-white/70 text-lg">shield</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-white/60 text-xs">Card Number</p>
+              <p class="text-sm font-bold font-headline tracking-widest" id="card-display">•••• •••• •••• ••••</p>
+            </div>
+            <button onclick="openBalanceModal()" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-5 rounded-full text-sm transition-all active:scale-95 flex items-center gap-2">
+              <span class="material-symbols-outlined text-base">visibility</span> View Balance
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Actions -->
+      <section>
+        <h3 class="text-on-surface font-headline font-bold text-lg mb-4">Quick Actions</h3>
+        <div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+          <button onclick="openTransferModal()" class="flex flex-col items-center gap-2 group flex-shrink-0">
+            <div class="w-16 h-16 rounded-[1.5rem] bg-surface-container-lowest shadow-[0px_4px_12px_rgba(25,28,29,0.06)] flex items-center justify-center transition-all group-hover:-translate-y-1 group-hover:shadow-md">
+              <span class="material-symbols-outlined text-primary text-3xl">send</span>
+            </div>
+            <span class="text-xs font-bold text-on-surface-variant font-label">Send</span>
+          </button>
+          <button onclick="openBalanceModal()" class="flex flex-col items-center gap-2 group flex-shrink-0">
+            <div class="w-16 h-16 rounded-[1.5rem] bg-surface-container-lowest shadow-[0px_4px_12px_rgba(25,28,29,0.06)] flex items-center justify-center transition-all group-hover:-translate-y-1 group-hover:shadow-md">
+              <span class="material-symbols-outlined text-primary text-3xl">account_balance_wallet</span>
+            </div>
+            <span class="text-xs font-bold text-on-surface-variant font-label">Balance</span>
+          </button>
+          <a href="/transactions" class="flex flex-col items-center gap-2 group flex-shrink-0">
+            <div class="w-16 h-16 rounded-[1.5rem] bg-surface-container-lowest shadow-[0px_4px_12px_rgba(25,28,29,0.06)] flex items-center justify-center transition-all group-hover:-translate-y-1 group-hover:shadow-md">
+              <span class="material-symbols-outlined text-primary text-3xl">receipt_long</span>
+            </div>
+            <span class="text-xs font-bold text-on-surface-variant font-label">History</span>
+          </a>
+          <a href="/account" class="flex flex-col items-center gap-2 group flex-shrink-0">
+            <div class="w-16 h-16 rounded-[1.5rem] bg-surface-container-lowest shadow-[0px_4px_12px_rgba(25,28,29,0.06)] flex items-center justify-center transition-all group-hover:-translate-y-1 group-hover:shadow-md">
+              <span class="material-symbols-outlined text-primary text-3xl">manage_accounts</span>
+            </div>
+            <span class="text-xs font-bold text-on-surface-variant font-label">Profile</span>
+          </a>
+          <a href="/blockchain-view" class="admin-only hidden flex flex-col items-center gap-2 group flex-shrink-0">
+            <div class="w-16 h-16 rounded-[1.5rem] bg-surface-container-lowest shadow-[0px_4px_12px_rgba(25,28,29,0.06)] flex items-center justify-center transition-all group-hover:-translate-y-1 group-hover:shadow-md">
+              <span class="material-symbols-outlined text-primary text-3xl">link</span>
+            </div>
+            <span class="text-xs font-bold text-on-surface-variant font-label">Blockchain</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Recent Transactions + Insight -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section>
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-on-surface font-headline font-bold text-lg">Recent Transactions</h3>
+            <a href="/transactions" class="text-primary text-xs font-bold hover:underline">View All</a>
+          </div>
+          <div id="recent-tx" class="flex flex-col gap-3">
+            <div class="flex items-center justify-center p-8 text-on-surface-variant">
+              <div class="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2"></div>
+              Loading...
+            </div>
+          </div>
+        </section>
+
+        <!-- Spending Insight -->
+        <section class="bg-surface-container-low rounded-3xl p-6 flex flex-col gap-4">
+          <div class="flex justify-between items-start">
+            <h3 class="text-on-surface font-headline font-bold text-lg leading-tight">Transaction<br/>Summary</h3>
+            <div class="bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Live</div>
+          </div>
+          <div id="tx-stats" class="flex flex-col gap-3">
+            <div class="flex justify-between items-center p-3 bg-surface-container-lowest rounded-xl">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-lg">arrow_upward</span>
+                <span class="text-sm font-medium text-on-surface-variant">Total Sent</span>
+              </div>
+              <span class="font-bold text-error font-headline" id="stat-sent">₹0</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-surface-container-lowest rounded-xl">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-lg">arrow_downward</span>
+                <span class="text-sm font-medium text-on-surface-variant">Total Received</span>
+              </div>
+              <span class="font-bold text-primary font-headline" id="stat-received">₹0</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-surface-container-lowest rounded-xl">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-lg">swap_horiz</span>
+                <span class="text-sm font-medium text-on-surface-variant">Total Transactions</span>
+              </div>
+              <span class="font-bold font-headline text-on-surface" id="stat-count">0</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ====== BALANCE MODAL ====== -->
+<div id="balance-modal" class="modal-overlay hidden">
+  <div class="bg-surface-container-lowest rounded-3xl p-8 w-full max-w-sm shadow-[0px_8px_24px_rgba(25,28,29,0.12)]">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-bold text-xl font-headline">Check Balance</h3>
+      <button onclick="closeModal('balance-modal')" class="p-2 rounded-xl hover:bg-surface-container-high transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4 mx-auto">
+      <span class="material-symbols-outlined text-primary text-3xl">account_balance_wallet</span>
+    </div>
+    <p class="text-center text-on-surface-variant text-sm mb-6">Enter your 4-digit transaction PIN to view your balance</p>
+    <div class="soft-field rounded-xl px-4 py-3 flex items-center gap-2 mb-4">
+      <span class="material-symbols-outlined text-secondary text-xl">pin</span>
+      <input id="balance-pin" type="password" maxlength="4" placeholder="Transaction PIN" class="flex-1 bg-transparent text-on-surface text-sm font-medium focus:outline-none"/>
+    </div>
+    <div id="balance-result" class="hidden mb-4 p-4 bg-surface-container-low rounded-2xl text-center">
+      <p class="text-xs text-on-surface-variant uppercase tracking-wider">Your Balance</p>
+      <p class="text-4xl font-bold font-headline text-primary mt-1" id="balance-amount">₹0</p>
+    </div>
+    <div id="balance-error" class="hidden mb-4 bg-error-container text-error rounded-xl p-3 text-sm font-medium"></div>
+    <button onclick="checkBalance()" class="w-full signature-gradient text-white font-bold py-4 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined">visibility</span> Show Balance
+    </button>
+  </div>
+</div>
+
+<!-- ====== TRANSFER MODAL ====== -->
+<div id="transfer-modal" class="modal-overlay hidden">
+  <div class="bg-surface-container-lowest rounded-3xl p-8 w-full max-w-sm shadow-[0px_8px_24px_rgba(25,28,29,0.12)] max-h-screen overflow-y-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-bold text-xl font-headline">Send Money</h3>
+      <button onclick="closeModal('transfer-modal')" class="p-2 rounded-xl hover:bg-surface-container-high transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Stepper -->
+    <div class="flex items-center mb-6">
+      <div class="flex flex-col items-center">
+        <div id="step1-circle" class="w-8 h-8 rounded-full signature-gradient flex items-center justify-center text-white text-xs font-bold">1</div>
+        <span class="text-xs text-on-surface-variant mt-1">Details</span>
+      </div>
+      <div class="flex-1 h-0.5 bg-outline-variant/30 mx-2"></div>
+      <div class="flex flex-col items-center">
+        <div id="step2-circle" class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant text-xs font-bold">2</div>
+        <span class="text-xs text-on-surface-variant mt-1">Sign</span>
+      </div>
+      <div class="flex-1 h-0.5 bg-outline-variant/30 mx-2"></div>
+      <div class="flex flex-col items-center">
+        <div id="step3-circle" class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant text-xs font-bold">3</div>
+        <span class="text-xs text-on-surface-variant mt-1">Done</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Transaction details -->
+    <div id="transfer-step1">
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Receiver Card Number</label>
+          <div class="soft-field rounded-xl px-4 py-3 flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-xl">credit_card</span>
+            <input id="tx-receiver-card" type="text" placeholder="16-digit card number" class="flex-1 bg-transparent text-on-surface text-sm font-medium focus:outline-none"/>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Amount (₹)</label>
+          <div class="soft-field rounded-xl px-4 py-3 flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-xl">currency_rupee</span>
+            <input id="tx-amount" type="number" min="1" placeholder="0.00" class="flex-1 bg-transparent text-on-surface text-sm font-medium focus:outline-none"/>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Transaction PIN</label>
+          <div class="soft-field rounded-xl px-4 py-3 flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-xl">pin</span>
+            <input id="tx-pin" type="password" maxlength="4" placeholder="4-digit PIN" class="flex-1 bg-transparent text-on-surface text-sm font-medium focus:outline-none"/>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Hardware Wallet PIN</label>
+          <div class="soft-field rounded-xl px-4 py-3 flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-xl">key</span>
+            <input id="tx-wallet-pin" type="password" placeholder="Wallet PIN" class="flex-1 bg-transparent text-on-surface text-sm font-medium focus:outline-none"/>
+          </div>
+        </div>
+      </div>
+      <div id="transfer-error" class="hidden mt-4 bg-error-container text-error rounded-xl p-3 text-sm font-medium"></div>
+      <button onclick="signTransaction()" class="w-full mt-6 signature-gradient text-white font-bold py-4 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined">draw</span> Sign Transaction
+      </button>
+    </div>
+
+    <!-- Step 2: Confirmation -->
+    <div id="transfer-step2" class="hidden">
+      <div class="bg-surface-container-low rounded-2xl p-5 mb-4">
+        <h4 class="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-3">Transaction Summary</h4>
+        <div class="space-y-2">
+          <div class="flex justify-between"><span class="text-sm text-on-surface-variant">To</span><span class="text-sm font-bold text-on-surface" id="confirm-receiver">-</span></div>
+          <div class="flex justify-between"><span class="text-sm text-on-surface-variant">Amount</span><span class="text-sm font-bold text-primary font-headline" id="confirm-amount">-</span></div>
+          <div class="flex justify-between items-start"><span class="text-sm text-on-surface-variant">Signature</span><span class="text-xs text-on-surface-variant ml-4" id="confirm-sig">Ready</span></div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 p-3 bg-primary/5 rounded-xl mb-4">
+        <span class="material-symbols-outlined text-primary text-lg">verified_user</span>
+        <span class="text-xs text-on-surface-variant">Signature verified via EdDSA. Confirm to execute.</span>
+      </div>
+      <div id="transfer-confirm-error" class="hidden mb-4 bg-error-container text-error rounded-xl p-3 text-sm font-medium"></div>
+      <button onclick="executeTransfer()" class="w-full signature-gradient text-white font-bold py-4 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined">send</span> Confirm & Send
+      </button>
+      <button onclick="showStep(1)" class="w-full mt-2 text-on-surface-variant text-sm py-2 flex items-center justify-center gap-1">
+        <span class="material-symbols-outlined text-sm">arrow_back</span> Back
+      </button>
+    </div>
+
+    <!-- Step 3: Success -->
+    <div id="transfer-step3" class="hidden text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+        <span class="material-symbols-outlined text-primary text-4xl">check_circle</span>
+      </div>
+      <h4 class="font-bold text-xl font-headline mb-2">Transfer Successful!</h4>
+      <p class="text-on-surface-variant text-sm mb-2">Transaction signed, verified, and recorded on blockchain.</p>
+      <p class="text-xs text-on-surface-variant" id="success-tx-id">TX ID: -</p>
+      <p class="text-xs text-primary font-medium mt-2 min-h-[1.25rem]" id="blockchain-success-detail"></p>
+      <button onclick="closeModal('transfer-modal');location.reload();" class="w-full mt-6 signature-gradient text-white font-bold py-4 rounded-2xl active:scale-95 transition-all">Done</button>
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="transfer-loading" class="hidden flex items-center justify-center gap-2 mt-4 text-primary">
+      <div class="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-sm font-medium">Processing...</span>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Key Modal -->
+<div id="admin-modal" class="modal-overlay hidden">
+  <div class="bg-surface-container-lowest rounded-3xl p-8 w-full max-w-sm shadow-[0px_8px_24px_rgba(25,28,29,0.12)]">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-bold text-xl font-headline">Admin Verification</h3>
+      <button type="button" onclick="skipAdmin().then(() => closeModal('admin-modal'))" class="p-2 rounded-xl hover:bg-surface-container-high">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4 mx-auto">
+      <span class="material-symbols-outlined text-primary text-3xl">admin_panel_settings</span>
+    </div>
+    <p class="text-center text-on-surface-variant text-sm mb-6">Your account has admin privileges. Enter the admin access key to unlock admin features, or skip to continue as a regular user.</p>
+    <div class="soft-field rounded-xl px-4 py-3 flex items-center gap-2 mb-4">
+      <span class="material-symbols-outlined text-secondary text-xl">vpn_key</span>
+      <input id="admin-key" type="password" placeholder="Admin access key" class="flex-1 bg-transparent text-on-surface text-sm font-medium focus:outline-none"/>
+    </div>
+    <div id="admin-key-error" class="hidden mb-4 bg-error-container text-error rounded-xl p-3 text-sm font-medium"></div>
+    <button onclick="submitAdminKey()" class="w-full signature-gradient text-white font-bold py-4 rounded-2xl active:scale-95 transition-all mb-2">Verify Admin Key</button>
+    <button type="button" onclick="skipAdmin().then(() => closeModal('admin-modal'))" class="w-full text-on-surface-variant text-sm py-2">Skip — Continue as User</button>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+let signedData = null;
+
+if (!token) window.location.href = '/';
+
+// Show admin prompt if needed
+window.addEventListener('DOMContentLoaded', () => {
+  // Show admin modal if user is admin and coming from login
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('admin_prompt') && user.is_admin) {
+    document.getElementById('admin-modal').classList.remove('hidden');
+    // Clean URL
+    history.replaceState(null, '', '/dashboard');
+  }
+
+  // Show admin elements if admin
+  if (user.is_admin) {
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+  }
+
+  // Set sidebar
+  document.getElementById('sidebar-name').textContent = user.name || 'User';
+  document.getElementById('sidebar-bank').textContent = `Bank ${user.bank_id === 1 ? 'A' : 'B'}`;
+  document.getElementById('card-display').textContent = user.card_number ?
+    user.card_number.replace(/(\d{4})(?=\d)/g, '$1 ') : '•••• •••• •••• ••••';
+
+  loadRecentTransactions();
+});
+
+async function checkBalance() {
+  const pin = document.getElementById('balance-pin').value;
+  if (!pin || pin.length !== 4) {
+    document.getElementById('balance-error').textContent = 'Enter your 4-digit PIN';
+    document.getElementById('balance-error').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('balance-error').classList.add('hidden');
+  const res = await fetch('/api/user/balance', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+    body: JSON.stringify({ pin })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    document.getElementById('balance-error').textContent = data.error || 'Invalid PIN';
+    document.getElementById('balance-error').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('balance-amount').textContent = `₹${parseFloat(data.balance).toLocaleString('en-IN')}`;
+  document.getElementById('balance-result').classList.remove('hidden');
+  // Also update card section
+  document.getElementById('balance-display').innerHTML = `
+    <p class="text-4xl font-bold font-headline">₹${parseFloat(data.balance).toLocaleString('en-IN')}</p>
+    <p class="text-white/60 text-sm mt-1">Available Balance</p>
+  `;
+}
+
+async function signTransaction() {
+  const receiverCard = document.getElementById('tx-receiver-card').value.trim();
+  const amount = document.getElementById('tx-amount').value;
+  const pin = document.getElementById('tx-pin').value;
+  const walletPin = document.getElementById('tx-wallet-pin').value;
+
+  if (!receiverCard || !amount || !pin || !walletPin) {
+    showTransferError('All fields are required');
+    return;
+  }
+  if (parseFloat(amount) <= 0) { showTransferError('Amount must be positive'); return; }
+
+  setTransferLoading(true);
+  const res = await fetch('/api/wallet/sign', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+    body: JSON.stringify({ receiver_card: receiverCard, amount: parseFloat(amount), transaction_pin: pin, wallet_pin: walletPin })
+  });
+  const data = await res.json();
+  setTransferLoading(false);
+
+  if (!res.ok) { showTransferError(data.error || 'Signing failed'); return; }
+
+  signedData = data;
+  document.getElementById('confirm-receiver').textContent = `${data.receiver_name} (${receiverCard.slice(-4)})`;
+  document.getElementById('confirm-amount').textContent = `₹${parseFloat(data.amount).toLocaleString('en-IN')}`;
+  document.getElementById('confirm-sig').textContent = 'Generated securely';
+  showStep(2);
+}
+
+async function executeTransfer() {
+  if (!signedData) return;
+  setTransferLoading(true);
+  document.getElementById('transfer-confirm-error').classList.add('hidden');
+
+  const res = await fetch('/api/transaction/send', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+    body: JSON.stringify({
+      receiver_id: signedData.receiver_id,
+      amount: signedData.amount,
+      signature: signedData.signature,
+      signing_id: signedData.signing_id,
+      sender_bank_id: signedData.sender_bank_id,
+      receiver_bank_id: signedData.receiver_bank_id
+    })
+  });
+  const data = await res.json();
+  setTransferLoading(false);
+
+  if (!res.ok) {
+    document.getElementById('transfer-confirm-error').textContent = data.error || 'Transaction failed';
+    document.getElementById('transfer-confirm-error').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('success-tx-id').textContent = `TX ID: ${data.transaction_id}`;
+  const bcEl = document.getElementById('blockchain-success-detail');
+  const bc = data.blockchain;
+  if (bc && bc.status === 'complete' && bc.block_number != null) {
+    bcEl.textContent = `Blockchain complete — Block #${bc.block_number} (${bc.total_transactions}/15 txs).`;
+    bcEl.classList.remove('text-error');
+    bcEl.classList.add('text-primary');
+  } else if (bc && bc.status === 'error') {
+    bcEl.textContent = `Warning: transfer posted but blockchain step failed — ${bc.detail || 'unknown error'}. Check audit logs.`;
+    bcEl.classList.remove('text-primary');
+    bcEl.classList.add('text-error');
+  } else {
+    bcEl.textContent = '';
+  }
+  showStep(3);
+}
+
+function showStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById(`transfer-step${i}`).classList.toggle('hidden', i !== n);
+    const circle = document.getElementById(`step${i}-circle`);
+    if (i < n) {
+      circle.className = 'w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold';
+    } else if (i === n) {
+      circle.className = 'w-8 h-8 rounded-full signature-gradient flex items-center justify-center text-white text-xs font-bold';
+    } else {
+      circle.className = 'w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant text-xs font-bold';
+    }
+  });
+}
+
+function showTransferError(msg) {
+  const el = document.getElementById('transfer-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function setTransferLoading(show) {
+  document.getElementById('transfer-loading').classList.toggle('hidden', !show);
+}
+
+async function loadRecentTransactions() {
+  const res = await fetch('/api/transaction/history', {
+    headers: {'Authorization': `Bearer ${token}`}
+  });
+  if (!res.ok) return;
+  const txs = await res.json();
+
+  // Stats
+  let totalSent = 0, totalReceived = 0;
+  txs.forEach(tx => {
+    if (tx.direction === 'sent') totalSent += parseFloat(tx.amount);
+    else totalReceived += parseFloat(tx.amount);
+  });
+  document.getElementById('stat-sent').textContent = `₹${totalSent.toLocaleString('en-IN')}`;
+  document.getElementById('stat-received').textContent = `₹${totalReceived.toLocaleString('en-IN')}`;
+  document.getElementById('stat-count').textContent = txs.length;
+
+  // Recent 5
+  const recent = txs.slice(0, 5);
+  const container = document.getElementById('recent-tx');
+  if (recent.length === 0) {
+    container.innerHTML = `<div class="text-center text-on-surface-variant py-8 text-sm">No transactions yet</div>`;
+    return;
+  }
+  container.innerHTML = recent.map(tx => {
+    const isSent = tx.direction === 'sent';
+    const date = new Date(tx.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+    const name = isSent ? tx.receiver_name : tx.sender_name;
+    return `
+    <div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl shadow-[0px_4px_12px_rgba(25,28,29,0.02)]">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
+          <span class="material-symbols-outlined text-secondary text-xl">${isSent ? 'arrow_upward' : 'arrow_downward'}</span>
+        </div>
+        <div>
+          <p class="font-bold text-sm text-on-surface">${name || 'Unknown'}</p>
+          <p class="text-xs text-on-surface-variant font-medium">${isSent ? 'Sent' : 'Received'} · ${date}</p>
+        </div>
+      </div>
+      <p class="font-bold text-sm ${isSent ? 'text-error' : 'text-primary'}">${isSent ? '-' : '+'}₹${parseFloat(tx.amount).toLocaleString('en-IN')}</p>
+    </div>`;
+  }).join('');
+}
+
+function openBalanceModal() { document.getElementById('balance-modal').classList.remove('hidden'); }
+function openTransferModal() {
+  showStep(1);
+  document.getElementById('transfer-modal').classList.remove('hidden');
+  signedData = null;
+  document.getElementById('transfer-error').classList.add('hidden');
+}
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+async function submitAdminKey() {
+  const key =
+    (document.getElementById('admin-key') && document.getElementById('admin-key').value) ||
+    (document.getElementById('admin-key-input') && document.getElementById('admin-key-input').value) ||
+    '';
+  const res = await fetch('/api/auth/verify-admin', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+    body: JSON.stringify({ access_key: key })
+  });
+  const data = await res.json();
+  const errBox = document.getElementById('admin-key-error');
+  if (!res.ok || !data.token) {
+    if (errBox) {
+      errBox.textContent = data.error || 'Verification failed';
+      errBox.classList.remove('hidden');
+    }
+    return;
+  }
+  localStorage.setItem('token', data.token);
+  if (data.role === 'admin123') {
+    const u = {...user, is_admin: true};
+    localStorage.setItem('user', JSON.stringify(u));
+    closeModal('admin-modal');
+    document.getElementById('admin-key-banner').classList.add('hidden');
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+    document.getElementById('nav-role').textContent = 'Admin';
+  } else {
+    const u = {...user, is_admin: false};
+    localStorage.setItem('user', JSON.stringify(u));
+    if (errBox) {
+      errBox.textContent = 'Incorrect key. Continuing as regular user.';
+      errBox.classList.remove('hidden');
+    }
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+    document.getElementById('nav-role').textContent = 'Member';
+    setTimeout(() => { closeModal('admin-modal'); }, 1500);
+  }
+}
+
+async function skipAdmin() {
+  const res = await fetch('/api/auth/verify-admin', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+    body: JSON.stringify({ access_key: '__skip__' })
+  });
+  const data = await res.json();
+  if (data.token) localStorage.setItem('token', data.token);
+  const u = {...user, is_admin: false};
+  localStorage.setItem('user', JSON.stringify(u));
+  document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+  document.getElementById('nav-role').textContent = 'Member';
+}
+
+function verifyAdminKey() { submitAdminKey(); }
+</script>
+</body>
+</html>

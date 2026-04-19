@@ -1,0 +1,8 @@
+flask
+flask-cors
+python-dotenv
+pynacl
+firebase-admin
+requests
+psycopg2-binary
+PyJWT

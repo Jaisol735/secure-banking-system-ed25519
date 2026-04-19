@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HiTech Bank — Transaction History</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{"primary":"#005bbf","primary-container":"#1a73e8","on-primary":"#ffffff","surface":"#f8f9fa","surface-container-low":"#f3f4f5","surface-container-lowest":"#ffffff","surface-container-high":"#e7e8e9","surface-container":"#edeeef","surface-container-highest":"#e1e3e4","on-surface":"#191c1d","on-surface-variant":"#414754","outline-variant":"#c1c6d6","error":"#ba1a1a","error-container":"#ffdad6","secondary":"#5b5f64"},fontFamily:{"headline":["Manrope"],"body":["Inter"]}}}}
+</script>
+<style>
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;}
+.signature-gradient{background:linear-gradient(135deg,#005bbf 0%,#1a73e8 100%);}
+.modal-overlay{position:fixed;inset:0;background:rgba(25,28,29,0.5);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;}
+</style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+{% include 'navbar.html' %}
+
+<main class="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold font-headline">Transaction History</h1>
+      <p class="text-on-surface-variant mt-1">All your signed & blockchain-verified transactions</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="filterTx('all')" id="filter-all" class="px-4 py-2 rounded-full text-sm font-bold transition-all signature-gradient text-white">All</button>
+      <button onclick="filterTx('sent')" id="filter-sent" class="px-4 py-2 rounded-full text-sm font-bold transition-all bg-surface-container-high text-on-surface-variant">Sent</button>
+      <button onclick="filterTx('received')" id="filter-received" class="px-4 py-2 rounded-full text-sm font-bold transition-all bg-surface-container-high text-on-surface-variant">Received</button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-3 gap-4 mb-8">
+    <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+      <p class="text-xs text-on-surface-variant uppercase tracking-wider font-bold mb-2">Total Sent</p>
+      <p class="text-2xl font-bold font-headline text-error" id="sum-sent">₹0</p>
+    </div>
+    <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+      <p class="text-xs text-on-surface-variant uppercase tracking-wider font-bold mb-2">Total Received</p>
+      <p class="text-2xl font-bold font-headline text-primary" id="sum-received">₹0</p>
+    </div>
+    <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+      <p class="text-xs text-on-surface-variant uppercase tracking-wider font-bold mb-2">Transactions</p>
+      <p class="text-2xl font-bold font-headline text-on-surface" id="sum-count">0</p>
+    </div>
+  </div>
+
+  <!-- Transaction List -->
+  <div id="tx-list" class="flex flex-col gap-3">
+    <div class="flex items-center justify-center p-12 text-on-surface-variant">
+      <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mr-3"></div>
+      Loading transactions...
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div id="empty-state" class="hidden text-center py-16">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface-container-high mb-4">
+      <span class="material-symbols-outlined text-on-surface-variant text-3xl">receipt_long</span>
+    </div>
+    <p class="font-bold text-lg font-headline">No transactions yet</p>
+    <p class="text-on-surface-variant text-sm mt-1">Send money to see your history here</p>
+  </div>
+</main>
+
+<!-- Transaction Detail Modal -->
+<div id="tx-modal" class="modal-overlay hidden">
+  <div class="bg-surface-container-lowest rounded-3xl p-8 w-full max-w-md shadow-[0px_8px_24px_rgba(25,28,29,0.12)]">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-bold text-xl font-headline">Transaction Details</h3>
+      <button onclick="document.getElementById('tx-modal').classList.add('hidden')" class="p-2 rounded-xl hover:bg-surface-container-high">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="tx-detail-content" class="space-y-4"></div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) window.location.href = '/';
+
+let allTransactions = [];
+let currentFilter = 'all';
+
+async function loadTransactions() {
+  const res = await fetch('/api/transaction/history', {
+    headers: {'Authorization': `Bearer ${token}`}
+  });
+  if (!res.ok) { document.getElementById('tx-list').innerHTML = `<div class="text-error text-center p-8">Failed to load transactions</div>`; return; }
+
+  allTransactions = await res.json();
+
+  // Compute summaries
+  let sent = 0, received = 0;
+  allTransactions.forEach(tx => {
+    if (tx.direction === 'sent') sent += parseFloat(tx.amount);
+    else received += parseFloat(tx.amount);
+  });
+  document.getElementById('sum-sent').textContent = `₹${sent.toLocaleString('en-IN')}`;
+  document.getElementById('sum-received').textContent = `₹${received.toLocaleString('en-IN')}`;
+  document.getElementById('sum-count').textContent = allTransactions.length;
+
+  renderTransactions();
+}
+
+function filterTx(type) {
+  currentFilter = type;
+  ['all','sent','received'].forEach(t => {
+    const btn = document.getElementById(`filter-${t}`);
+    if (t === type) {
+      btn.className = 'px-4 py-2 rounded-full text-sm font-bold transition-all signature-gradient text-white';
+    } else {
+      btn.className = 'px-4 py-2 rounded-full text-sm font-bold transition-all bg-surface-container-high text-on-surface-variant';
+    }
+  });
+  renderTransactions();
+}
+
+function renderTransactions() {
+  const filtered = currentFilter === 'all' ? allTransactions :
+    allTransactions.filter(tx => tx.direction === currentFilter);
+
+  const container = document.getElementById('tx-list');
+  document.getElementById('empty-state').classList.toggle('hidden', filtered.length > 0);
+
+  if (filtered.length === 0) { container.innerHTML = ''; return; }
+
+  // Group by date
+  const groups = {};
+  filtered.forEach(tx => {
+    const date = new Date(tx.created_at).toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    if (!groups[date]) groups[date] = [];
+    groups[date].push(tx);
+  });
+
+  container.innerHTML = Object.entries(groups).map(([date, txs]) => `
+    <div>
+      <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-3 px-1">${date}</p>
+      <div class="flex flex-col gap-2">
+        ${txs.map(tx => renderTxRow(tx)).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTxRow(tx) {
+  const isSent = tx.direction === 'sent';
+  const name = isSent ? (tx.receiver_name || `User ${tx.receiver_id}`) : (tx.sender_name || `User ${tx.sender_id}`);
+  const time = new Date(tx.created_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  const bankInfo = isSent
+    ? `Bank ${tx.sender_bank_id === 1 ? 'A' : 'B'} → Bank ${tx.receiver_bank_id === 1 ? 'A' : 'B'}`
+    : `From Bank ${tx.sender_bank_id === 1 ? 'A' : 'B'}`;
+
+  return `
+  <div onclick="showDetail(${tx.id})" class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-2xl shadow-[0px_2px_8px_rgba(25,28,29,0.04)] hover:bg-surface-container-low transition-colors cursor-pointer">
+    <div class="flex items-center gap-4">
+      <div class="w-11 h-11 rounded-full ${isSent ? 'bg-error/10' : 'bg-primary/10'} flex items-center justify-center">
+        <span class="material-symbols-outlined ${isSent ? 'text-error' : 'text-primary'} text-xl">${isSent ? 'arrow_upward' : 'arrow_downward'}</span>
+      </div>
+      <div>
+        <p class="font-bold text-sm text-on-surface">${isSent ? `To: ${name}` : `From: ${name}`}</p>
+        <p class="text-xs text-on-surface-variant">${bankInfo} · ${time}</p>
+      </div>
+    </div>
+    <div class="text-right">
+      <p class="font-bold text-sm ${isSent ? 'text-error' : 'text-primary'} font-headline">${isSent ? '-' : '+'}₹${parseFloat(tx.amount).toLocaleString('en-IN')}</p>
+      <div class="flex items-center gap-1 justify-end mt-1">
+        <span class="material-symbols-outlined text-primary text-xs" style="font-size:12px">verified</span>
+        <span class="text-xs text-on-surface-variant">${tx.status}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function showDetail(txId) {
+  const tx = allTransactions.find(t => t.id === txId);
+  if (!tx) return;
+  const isSent = tx.direction === 'sent';
+  document.getElementById('tx-detail-content').innerHTML = `
+    <div class="flex items-center justify-center mb-2">
+      <div class="w-16 h-16 rounded-2xl ${isSent ? 'bg-error/10' : 'bg-primary/10'} flex items-center justify-center">
+        <span class="material-symbols-outlined ${isSent ? 'text-error' : 'text-primary'} text-3xl">${isSent ? 'arrow_upward' : 'arrow_downward'}</span>
+      </div>
+    </div>
+    <p class="text-center text-3xl font-bold font-headline ${isSent ? 'text-error' : 'text-primary'} mb-6">${isSent?'-':'+'}₹${parseFloat(tx.amount).toLocaleString('en-IN')}</p>
+    <div class="space-y-3 bg-surface-container-low rounded-2xl p-5">
+      ${detailRow('Transaction ID', '#' + tx.id)}
+      ${detailRow('Status', tx.status, true)}
+      ${detailRow('Direction', isSent ? 'Sent' : 'Received')}
+      ${detailRow('From', tx.sender_name || `User ${tx.sender_id}` + ` (Bank ${tx.sender_bank_id === 1 ? 'A' : 'B'})`)}
+      ${detailRow('To', tx.receiver_name || `User ${tx.receiver_id}` + ` (Bank ${tx.receiver_bank_id === 1 ? 'A' : 'B'})`)}
+      ${detailRow('Date', new Date(tx.created_at).toLocaleString('en-IN'))}
+    </div>
+    <div class="mt-3 bg-surface-container-low rounded-2xl p-4">
+      <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 flex items-center gap-1">
+        <span class="material-symbols-outlined text-primary text-sm">verified_user</span> EdDSA Signature
+      </p>
+      <p class="text-xs font-mono text-on-surface-variant break-all">${tx.signature}</p>
+    </div>
+  `;
+  document.getElementById('tx-modal').classList.remove('hidden');
+}
+
+function detailRow(label, value, isStatus = false) {
+  return `
+    <div class="flex justify-between items-center">
+      <span class="text-sm text-on-surface-variant">${label}</span>
+      <span class="text-sm font-bold text-on-surface ${isStatus ? 'text-primary' : ''}">${value}</span>
+    </div>`;
+}
+
+loadTransactions();
+</script>
+</body>
+</html>

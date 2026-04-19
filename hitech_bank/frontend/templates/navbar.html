@@ -1,0 +1,112 @@
+<!-- navbar.html - included in other templates via Jinja2 include or JS injection -->
+<header class="bg-surface sticky top-0 z-50 shadow-[0px_2px_12px_rgba(25,28,29,0.06)]">
+  <div class="flex justify-between items-center px-6 py-4 w-full max-w-7xl mx-auto">
+    <!-- Left: Logo + Nav -->
+    <div class="flex items-center gap-8">
+      <a href="/dashboard" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl signature-gradient flex items-center justify-center">
+          <span class="material-symbols-outlined text-white text-lg">account_balance</span>
+        </div>
+        <span class="text-xl font-bold font-headline text-on-surface hidden sm:block">HiTech Bank</span>
+      </a>
+
+      <!-- Desktop Nav — regular user -->
+      <nav class="hidden md:flex items-center gap-2" id="nav-user">
+        <a href="/dashboard" class="nav-link flex items-center gap-2 py-2 px-4 rounded-xl font-bold text-sm transition-all font-body" id="nav-home">
+          <span class="material-symbols-outlined text-xl">dashboard</span> Dashboard
+        </a>
+        <a href="/account" class="nav-link flex items-center gap-2 py-2 px-4 rounded-xl font-bold text-sm transition-all font-body" id="nav-account">
+          <span class="material-symbols-outlined text-xl">manage_accounts</span> Account
+        </a>
+        <a href="/transactions" class="nav-link flex items-center gap-2 py-2 px-4 rounded-xl font-bold text-sm transition-all font-body" id="nav-history">
+          <span class="material-symbols-outlined text-xl">history</span> Transaction History
+        </a>
+      </nav>
+
+      <!-- Admin Nav extras -->
+      <nav class="hidden md:flex items-center gap-2" id="nav-admin" style="display:none!important">
+        <a href="/blockchain-view" class="nav-link flex items-center gap-2 py-2 px-4 rounded-xl font-bold text-sm transition-all font-body" id="nav-blockchain">
+          <span class="material-symbols-outlined text-xl">link</span> Blockchain
+        </a>
+        <a href="/visualization" class="nav-link flex items-center gap-2 py-2 px-4 rounded-xl font-bold text-sm transition-all font-body" id="nav-viz">
+          <span class="material-symbols-outlined text-xl">insights</span> Visualization
+        </a>
+        <a href="#" onclick="showAdminPanel()" class="nav-link flex items-center gap-2 py-2 px-4 rounded-xl font-bold text-sm transition-all font-body" id="nav-admin-panel">
+          <span class="material-symbols-outlined text-xl">admin_panel_settings</span> Admin Panel
+        </a>
+      </nav>
+    </div>
+
+    <!-- Right: User avatar + logout -->
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:flex flex-col items-end">
+        <span class="text-sm font-bold font-headline text-on-surface" id="nav-username">Loading...</span>
+        <span class="text-xs text-on-surface-variant font-medium" id="nav-role">Member</span>
+      </div>
+      <div class="w-10 h-10 rounded-full signature-gradient flex items-center justify-center text-white font-bold text-sm font-headline" id="nav-avatar">?</div>
+      <button onclick="logout()" class="p-2 rounded-xl hover:bg-surface-container-high transition-colors" title="Logout">
+        <span class="material-symbols-outlined text-on-surface-variant">logout</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Nav -->
+  <div class="md:hidden flex items-center gap-1 px-4 pb-3 overflow-x-auto">
+    <a href="/dashboard" class="flex items-center gap-1 py-2 px-3 rounded-xl font-bold text-xs whitespace-nowrap transition-all font-body nav-link" id="mnav-home">
+      <span class="material-symbols-outlined text-base">dashboard</span> Home
+    </a>
+    <a href="/account" class="flex items-center gap-1 py-2 px-3 rounded-xl font-bold text-xs whitespace-nowrap transition-all font-body nav-link" id="mnav-account">
+      <span class="material-symbols-outlined text-base">person</span> Account
+    </a>
+    <a href="/transactions" class="flex items-center gap-1 py-2 px-3 rounded-xl font-bold text-xs whitespace-nowrap transition-all font-body nav-link" id="mnav-history">
+      <span class="material-symbols-outlined text-base">history</span> History
+    </a>
+    <a href="/blockchain-view" class="flex items-center gap-1 py-2 px-3 rounded-xl font-bold text-xs whitespace-nowrap transition-all font-body nav-link admin-only hidden" id="mnav-blockchain">
+      <span class="material-symbols-outlined text-base">link</span> Chain
+    </a>
+    <a href="/visualization" class="flex items-center gap-1 py-2 px-3 rounded-xl font-bold text-xs whitespace-nowrap transition-all font-body nav-link admin-only hidden" id="mnav-viz">
+      <span class="material-symbols-outlined text-base">insights</span> Visualize
+    </a>
+  </div>
+</header>
+
+<script>
+(function initNavbar() {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token');
+  
+  if (!token) { window.location.href = '/'; return; }
+
+  if (user.name) {
+    document.getElementById('nav-username').textContent = user.name;
+    document.getElementById('nav-avatar').textContent = user.name.charAt(0).toUpperCase();
+  }
+
+  if (user.is_admin) {
+    document.getElementById('nav-role').textContent = 'Admin';
+    document.getElementById('nav-admin').style.cssText = '';
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+  }
+
+  // Highlight active nav link
+  const path = window.location.pathname;
+  document.querySelectorAll('.nav-link').forEach(link => {
+    const href = link.getAttribute('href');
+    if (href === path || (href === '/dashboard' && path === '/')) {
+      link.style.background = 'linear-gradient(135deg, #005bbf 0%, #1a73e8 100%)';
+      link.style.color = 'white';
+    } else {
+      link.style.color = '#414754';
+    }
+  });
+})();
+
+function logout() {
+  localStorage.clear();
+  window.location.href = '/';
+}
+
+function showAdminPanel() {
+  window.location.href = '/blockchain-view';
+}
+</script>

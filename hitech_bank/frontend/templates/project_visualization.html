@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HiTech Bank — Project Visualization</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{"primary":"#005bbf","primary-container":"#1a73e8","surface":"#f8f9fa","surface-container-low":"#f3f4f5","surface-container-lowest":"#ffffff","surface-container-high":"#e7e8e9","on-surface":"#191c1d","on-surface-variant":"#414754","outline-variant":"#c1c6d6","error":"#ba1a1a","error-container":"#ffdad6","secondary":"#5b5f64"},fontFamily:{"headline":["Manrope"],"body":["Inter"]}}}}
+</script>
+<style>
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;}
+.signature-gradient{background:linear-gradient(135deg,#005bbf 0%,#1a73e8 100%);}
+.tab-active{background:linear-gradient(135deg,#005bbf,#1a73e8);color:white;}
+.tab-inactive{background:#f3f4f5;color:#414754;}
+
+/* Animation */
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.85);}}
+@keyframes flow{0%{stroke-dashoffset:100;}100%{stroke-dashoffset:0;}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+.pulse{animation:pulse-dot 1.5s ease-in-out infinite;}
+.fade-in{animation:fadeIn .4s ease forwards;}
+.step-node{transition:all .3s ease;}
+.step-node.active{box-shadow:0 0 0 4px rgba(0,91,191,0.2);}
+.flow-arrow{animation:flow 1s linear infinite;}
+.shimmer{background:linear-gradient(90deg,#f3f4f5 25%,#e7e8e9 50%,#f3f4f5 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;}
+.step-header{align-items:flex-start;}
+.step-index{flex-shrink:0;margin-top:2px;}
+.flow-output{
+  margin:0 0 0 2.75rem;
+  border:2px solid #1a73e8;
+  border-radius:0.9rem;
+  background:#eef5ff;
+  padding:0.75rem 0.9rem;
+  min-height:3.35rem;
+  transition:all .25s ease;
+}
+.flow-output.is-idle{opacity:.6;border-color:#8bb7ef;background:#f5f9ff;}
+.flow-output p{font-size:.75rem;line-height:1.35rem;}
+
+/* Blockchain viz */
+.block-card{transition:all .3s ease;cursor:pointer;}
+.block-card:hover{transform:translateY(-3px);}
+.chain-connector{background:linear-gradient(90deg,#005bbf,#1a73e8);height:3px;flex:1;}
+</style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+{% include 'navbar.html' %}
+
+<main class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+  <div class="mb-8 text-center">
+    <h1 class="text-3xl font-bold font-headline">Project Visualization</h1>
+    <p class="text-on-surface-variant mt-2">Explore how HiTech Bank's security systems work</p>
+  </div>
+
+  <!-- Tab Selector -->
+  <div class="flex rounded-2xl overflow-hidden mb-10 p-1 bg-surface-container-low gap-1 max-w-md mx-auto">
+    <button onclick="switchViz('wallet')" id="viz-tab-wallet" class="flex-1 py-3 rounded-xl font-bold text-sm tab-active transition-all flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined text-base">hardware</span> Hardware Wallet
+    </button>
+    <button onclick="switchViz('blockchain')" id="viz-tab-blockchain" class="flex-1 py-3 rounded-xl font-bold text-sm tab-inactive transition-all flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined text-base">link</span> Blockchain
+    </button>
+  </div>
+
+  <!-- ===== HARDWARE WALLET VISUALIZATION ===== -->
+  <div id="viz-wallet">
+    <div class="text-center mb-8">
+      <h2 class="text-xl font-bold font-headline">Hardware Wallet & Digital Signature Flow</h2>
+      <p class="text-on-surface-variant text-sm mt-1">How your private key signs a transaction without ever leaving the wallet</p>
+    </div>
+
+    <!-- Interactive demo -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+      <!-- Left: Step-by-step flow -->
+      <div class="flex flex-col gap-4">
+        <div id="wallet-step-1" class="step-node bg-surface-container-lowest rounded-2xl p-5 shadow-[0px_4px_12px_rgba(25,28,29,0.04)] active">
+          <div class="step-header flex gap-3 mb-3">
+            <div class="step-index w-8 h-8 rounded-full signature-gradient flex items-center justify-center text-white text-sm font-bold">1</div>
+            <p class="font-bold text-sm leading-tight">User Initiates Transaction</p>
+          </div>
+          <p class="text-xs text-on-surface-variant ml-11">User enters receiver card, amount, transaction PIN, and wallet PIN in the frontend.</p>
+          <div class="mt-3 ml-11 bg-surface-container-low rounded-xl p-3 font-mono text-xs text-on-surface-variant">
+            receiver_card: "4111...0002"<br/>amount: 1000<br/>txn_pin: "0726"<br/>wallet_pin: "0726"
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 ml-4">
+          <div class="w-0.5 h-8 bg-primary/30 ml-3.5"></div>
+          <span class="material-symbols-outlined text-primary text-sm">arrow_downward</span>
+        </div>
+        <div id="wallet-output-1" class="flow-output is-idle font-mono">
+          <p>Output: API payload formed for sender_id=6, receiver_card="4111...0002", amount=1000.</p>
+        </div>
+
+        <div id="wallet-step-2" class="step-node bg-surface-container-lowest rounded-2xl p-5 shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+          <div class="step-header flex gap-3 mb-3">
+            <div class="step-index w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant text-sm font-bold">2</div>
+            <p class="font-bold text-sm leading-tight">Backend Validates PIN</p>
+          </div>
+          <p class="text-xs text-on-surface-variant ml-11">Backend uses bcrypt to verify transaction PIN. If invalid, transaction is rejected.</p>
+          <div class="mt-3 ml-11 font-mono text-xs">
+            <span class="text-primary">check_user_pin(user_id, pin)</span><br/>
+            <span class="text-on-surface-variant">→ bcrypt.verify(pin, stored_hash)</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 ml-4">
+          <div class="w-0.5 h-8 bg-primary/30 ml-3.5"></div>
+          <span class="material-symbols-outlined text-primary text-sm">arrow_downward</span>
+        </div>
+        <div id="wallet-output-2" class="flow-output is-idle font-mono">
+          <p>Output: txn_pin "0726" verified successfully; request allowed for wallet signing.</p>
+        </div>
+
+        <div id="wallet-step-3" class="step-node bg-surface-container-lowest rounded-2xl p-5 shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+          <div class="step-header flex gap-3 mb-3">
+            <div class="step-index w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant text-sm font-bold">3</div>
+            <p class="font-bold text-sm leading-tight">Wallet Decrypts Private Key</p>
+          </div>
+          <p class="text-xs text-on-surface-variant ml-11">wallet_pin is SHA-256 hashed → used as XOR key → decrypts stored encrypted private key.</p>
+          <div class="mt-3 ml-11 font-mono text-xs">
+            <span class="text-on-surface-variant">key = SHA256(wallet_pin)</span><br/>
+            <span class="text-primary">private_key = XOR(encrypted_key, key)</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 ml-4">
+          <div class="w-0.5 h-8 bg-primary/30 ml-3.5"></div>
+          <span class="material-symbols-outlined text-primary text-sm">arrow_downward</span>
+        </div>
+        <div id="wallet-output-3" class="flow-output is-idle font-mono">
+          <p>Output: encrypted_private_key=c88b70...02af, key=SHA256("0726"), private_key decrypted in wallet memory.</p>
+        </div>
+
+        <div id="wallet-step-4" class="step-node bg-surface-container-lowest rounded-2xl p-5 shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+          <div class="step-header flex gap-3 mb-3">
+            <div class="step-index w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant text-sm font-bold">4</div>
+            <p class="font-bold text-sm leading-tight">EdDSA Signs Transaction</p>
+          </div>
+          <p class="text-xs text-on-surface-variant ml-11">Message is formed and signed with Ed25519 (EdDSA). Only the signature — not the key — leaves the wallet.</p>
+          <div class="mt-3 ml-11 font-mono text-xs">
+            <span class="text-on-surface-variant">message = "1->2:1000:0"</span><br/>
+            <span class="text-primary">signature = EdDSA.sign(private_key, message)</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 ml-4">
+          <div class="w-0.5 h-8 bg-primary/30 ml-3.5"></div>
+          <span class="material-symbols-outlined text-primary text-sm">arrow_downward</span>
+        </div>
+        <div id="wallet-output-4" class="flow-output is-idle font-mono">
+          <p>Output: message "6-&gt;4111...0002:1000:0" signed; signature generated and exported.</p>
+        </div>
+
+        <div id="wallet-step-5" class="step-node bg-surface-container-lowest rounded-2xl p-5 shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+          <div class="step-header flex gap-3 mb-3">
+            <div class="step-index w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant text-sm font-bold">5</div>
+            <p class="font-bold text-sm leading-tight">Backend Verifies & Commits</p>
+          </div>
+          <p class="text-xs text-on-surface-variant ml-11">Backend fetches user's public key from DB. Verifies signature. If valid → inserts transaction → updates blockchain.</p>
+          <div class="mt-3 ml-11 font-mono text-xs">
+            <span class="text-on-surface-variant">public_key = DB.users[sender_id]</span><br/>
+            <span class="text-primary">verify(public_key, message, signature) ✓</span><br/>
+            <span class="text-on-surface-variant">→ insert TX → update blockchain</span>
+          </div>
+        </div>
+        <div id="wallet-output-5" class="flow-output is-idle font-mono">
+          <p>Output: verify(6f40ee...75d4, message, signature) = true; transaction committed to blockchain.</p>
+        </div>
+      </div>
+
+      <!-- Right: Live animated wallet diagram -->
+      <div class="flex flex-col gap-6">
+        <div class="bg-on-surface rounded-3xl p-6 text-white relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style="background:radial-gradient(circle,white,transparent);transform:translate(30%,-30%)"></div>
+          <div class="flex items-center gap-3 mb-6">
+            <span class="material-symbols-outlined text-white text-2xl">hardware</span>
+            <h3 class="font-bold font-headline text-lg">Hardware Wallet</h3>
+            <div class="ml-auto flex gap-1">
+              <div class="w-2 h-2 rounded-full bg-green-400 pulse"></div>
+              <div class="w-2 h-2 rounded-full bg-green-400 pulse" style="animation-delay:.3s"></div>
+              <div class="w-2 h-2 rounded-full bg-green-400 pulse" style="animation-delay:.6s"></div>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div class="bg-white/10 rounded-xl p-3">
+              <p class="text-white/50 text-xs uppercase tracking-wider mb-1">Encrypted Private Key</p>
+              <p class="font-mono text-xs text-white/80">49259a8c41533dd692e0f136bf6a87a8...</p>
+            </div>
+            <div class="bg-white/10 rounded-xl p-3">
+              <p class="text-white/50 text-xs uppercase tracking-wider mb-1">PIN Hash (SHA-256)</p>
+              <p class="font-mono text-xs text-white/80">d19e5dbfd3d3afe04f12e4f5c120850...</p>
+            </div>
+            <div class="flex items-center gap-2 bg-green-400/20 rounded-xl p-3">
+              <span class="material-symbols-outlined text-green-400 text-lg">lock</span>
+              <div>
+                <p class="text-xs text-white/80 font-bold">Private key never leaves wallet</p>
+                <p class="text-xs text-white/50">Only signature is exported</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key concepts -->
+        <div class="bg-surface-container-low rounded-2xl p-5">
+          <h4 class="font-bold text-sm mb-4 font-headline">Security Properties</h4>
+          <div class="space-y-3">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary text-lg mt-0.5">verified_user</span>
+              <div>
+                <p class="text-sm font-bold">Non-repudiation</p>
+                <p class="text-xs text-on-surface-variant">Only the holder of the private key could have generated this signature</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary text-lg mt-0.5">security</span>
+              <div>
+                <p class="text-sm font-bold">Zero Private Key Exposure</p>
+                <p class="text-xs text-on-surface-variant">The key is decrypted in memory only, never sent over the network</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary text-lg mt-0.5">fingerprint</span>
+              <div>
+                <p class="text-sm font-bold">Tamper Detection</p>
+                <p class="text-xs text-on-surface-variant">Signature is tied to the exact message — any change invalidates it</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Animate button -->
+        <button onclick="animateWalletSteps()" class="signature-gradient text-white font-bold py-3 px-6 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined">play_arrow</span> Animate Flow
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BLOCKCHAIN VISUALIZATION ===== -->
+  <div id="viz-blockchain" class="hidden">
+    <div class="text-center mb-8">
+      <h2 class="text-xl font-bold font-headline">Blockchain Chain Structure</h2>
+      <p class="text-on-surface-variant text-sm mt-1">How transactions are grouped into blocks and chained with SHA-256 hashes</p>
+    </div>
+
+    <!-- Chain diagram -->
+    <div class="overflow-x-auto pb-4 mb-10">
+      <div class="flex items-stretch gap-0 min-w-max mx-auto w-fit">
+
+        <!-- Genesis indicator -->
+        <div class="flex flex-col items-center justify-center mr-2">
+          <div class="text-xs text-on-surface-variant font-bold uppercase tracking-wider rotate-[-90deg] whitespace-nowrap">Genesis</div>
+          <div class="w-0.5 flex-1 bg-primary/20"></div>
+          <p class="text-xs font-mono text-on-surface-variant mt-1">prev: "0"</p>
+        </div>
+
+        <!-- Block 1 -->
+        <div class="block-card bg-surface-container-lowest rounded-2xl p-5 w-52 shadow-[0px_4px_12px_rgba(25,28,29,0.06)]">
+          <div class="signature-gradient w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold mb-3">1</div>
+          <p class="font-bold text-sm font-headline mb-3">Block #1</p>
+          <div class="space-y-2 mb-3">
+            <div class="bg-surface-container-low rounded-lg p-2 text-xs font-mono">TX: 1→2 ₹500</div>
+            <div class="bg-surface-container-low rounded-lg p-2 text-xs font-mono">TX: 2→1 ₹200</div>
+            <div class="bg-surface-container-low rounded-lg p-2 text-xs text-on-surface-variant text-center">... up to 15 TXs</div>
+          </div>
+          <div class="bg-primary/5 rounded-lg p-2">
+            <p class="text-xs text-on-surface-variant">SHA-256 Hash:</p>
+            <p class="text-xs font-mono text-primary truncate">a3f2b1c...</p>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div class="flex items-center">
+          <div class="chain-connector w-16"></div>
+          <div class="w-0 h-0 border-t-8 border-b-8 border-l-12 border-transparent" style="border-left-color:#1a73e8;border-left-width:12px;"></div>
+        </div>
+
+        <!-- Block 2 -->
+        <div class="block-card bg-surface-container-lowest rounded-2xl p-5 w-52 shadow-[0px_4px_12px_rgba(25,28,29,0.06)]">
+          <div class="signature-gradient w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold mb-3">2</div>
+          <p class="font-bold text-sm font-headline mb-3">Block #2</p>
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-2 mb-3">
+            <p class="text-xs text-yellow-700">prev_hash = Block 1's hash</p>
+            <p class="text-xs font-mono text-yellow-600 truncate">a3f2b1c...</p>
+          </div>
+          <div class="space-y-1 mb-3">
+            <div class="bg-surface-container-low rounded-lg p-2 text-xs font-mono">TX: 3→4 ₹1000</div>
+            <div class="bg-surface-container-low rounded-lg p-2 text-xs text-on-surface-variant text-center">... up to 15 TXs</div>
+          </div>
+          <div class="bg-primary/5 rounded-lg p-2">
+            <p class="text-xs text-on-surface-variant">SHA-256 Hash:</p>
+            <p class="text-xs font-mono text-primary truncate">9d81e4f...</p>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div class="flex items-center">
+          <div class="chain-connector w-16"></div>
+          <div class="w-0 h-0 border-t-8 border-b-8 border-transparent" style="border-left-color:#1a73e8;border-left-width:12px;"></div>
+        </div>
+
+        <!-- Block N (current) -->
+        <div class="block-card bg-primary rounded-2xl p-5 w-52 shadow-[0px_8px_24px_rgba(0,91,191,0.2)]">
+          <div class="bg-white/20 w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold mb-3">N</div>
+          <p class="font-bold text-sm font-headline text-white mb-1">Block #N (Current)</p>
+          <p class="text-xs text-white/60 mb-3">Filling up... (0–15 TXs)</p>
+          <div class="bg-white/10 rounded-lg p-2 mb-3">
+            <p class="text-xs text-white/70">prev_hash = Block N-1 hash</p>
+          </div>
+          <div class="bg-white/10 rounded-lg p-2">
+            <div class="flex justify-between text-xs text-white/80 mb-1">
+              <span>Progress</span><span id="block-progress">3/15</span>
+            </div>
+            <div class="w-full bg-white/20 rounded-full h-2">
+              <div class="bg-white rounded-full h-2" style="width:20%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hash logic explanation -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+        <h4 class="font-bold font-headline mb-4 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">calculate</span> Hash Computation
+        </h4>
+        <div class="space-y-3 text-sm">
+          <div class="bg-surface-container-low rounded-xl p-3 font-mono text-xs">
+            <p class="text-on-surface-variant mb-1">// For each TX in block:</p>
+            <p class="text-primary">sender_id - sender_bank_id -</p>
+            <p class="text-primary">receiver_id - receiver_bank_id -</p>
+            <p class="text-primary">amount - signature</p>
+          </div>
+          <div class="flex items-center gap-2 text-on-surface-variant text-xs">
+            <span class="material-symbols-outlined text-sm">arrow_downward</span>
+            All TXs joined with "|" separator
+          </div>
+          <div class="bg-primary/5 rounded-xl p-3 font-mono text-xs">
+            <p class="text-primary">SHA256(tx_data) → current_hash</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-[0px_4px_12px_rgba(25,28,29,0.04)]">
+        <h4 class="font-bold font-headline mb-4 flex items-center gap-2">
+          <span class="material-symbols-outlined text-error">warning</span> Tamper Detection
+        </h4>
+        <div class="space-y-3">
+          <div class="flex items-start gap-3 p-3 bg-error-container rounded-xl">
+            <span class="material-symbols-outlined text-error text-lg mt-0.5">edit</span>
+            <div>
+              <p class="text-sm font-bold text-error">Attacker changes TX amount</p>
+              <p class="text-xs text-on-surface-variant mt-1">Block 2's tx_data changes → SHA-256 produces different hash</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-center text-on-surface-variant">
+            <span class="material-symbols-outlined">arrow_downward</span>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-error-container rounded-xl">
+            <span class="material-symbols-outlined text-error text-lg mt-0.5">link_off</span>
+            <div>
+              <p class="text-sm font-bold text-error">Chain breaks at Block 3</p>
+              <p class="text-xs text-on-surface-variant mt-1">Block 3's stored prev_hash ≠ recomputed Block 2 hash → tamper detected!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Block size rule -->
+    <div class="bg-surface-container-low rounded-2xl p-6">
+      <h4 class="font-bold font-headline mb-4">Block Lifecycle Rules</h4>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-surface-container-lowest rounded-xl p-4 text-center">
+          <span class="material-symbols-outlined text-primary text-3xl mb-2 block">add_circle</span>
+          <p class="font-bold text-sm">TX arrives</p>
+          <p class="text-xs text-on-surface-variant mt-1">Check latest block's total_transactions</p>
+        </div>
+        <div class="bg-surface-container-lowest rounded-xl p-4 text-center">
+          <span class="material-symbols-outlined text-primary text-3xl mb-2 block">queue</span>
+          <p class="font-bold text-sm">If block &lt; 15</p>
+          <p class="text-xs text-on-surface-variant mt-1">Add TX, re-fetch all TXs, recompute SHA-256, update block hash</p>
+        </div>
+        <div class="bg-surface-container-lowest rounded-xl p-4 text-center">
+          <span class="material-symbols-outlined text-primary text-3xl mb-2 block">add_box</span>
+          <p class="font-bold text-sm">If block = 15</p>
+          <p class="text-xs text-on-surface-variant mt-1">Create new block, prev_hash = last block's hash, compute new hash</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/';
+
+function _jwtPayload(tok) {
+  try {
+    const b = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const pad = b.length % 4 ? '='.repeat(4 - (b.length % 4)) : '';
+    return JSON.parse(atob(b + pad));
+  } catch (e) { return {}; }
+}
+if (!_jwtPayload(token).is_admin) window.location.href = '/dashboard';
+
+function switchViz(tab) {
+  document.getElementById('viz-wallet').classList.toggle('hidden', tab !== 'wallet');
+  document.getElementById('viz-blockchain').classList.toggle('hidden', tab !== 'blockchain');
+  ['wallet','blockchain'].forEach(t => {
+    const btn = document.getElementById(`viz-tab-${t}`);
+    btn.className = `flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${t===tab?'tab-active':'tab-inactive'}`;
+  });
+}
+
+async function animateWalletSteps() {
+  const steps = [1,2,3,4,5];
+  const outputs = [1,2,3,4,5];
+  // Reset all
+  steps.forEach(s => {
+    const el = document.getElementById(`wallet-step-${s}`);
+    el.classList.remove('active');
+    el.style.border = '1px solid transparent';
+    el.style.boxShadow = 'none';
+    const circle = el.querySelector('.step-index');
+    if (circle && s > 1) {
+      circle.className = 'step-index w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant text-sm font-bold';
+    }
+  });
+  outputs.forEach(o => {
+    const out = document.getElementById(`wallet-output-${o}`);
+    if (out) out.classList.add('is-idle');
+  });
+
+  for (let i = 0; i < steps.length; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, 650));
+    const el = document.getElementById(`wallet-step-${steps[i]}`);
+    el.classList.add('active');
+    el.style.border = '2px solid #005bbf';
+    el.style.boxShadow = '0 0 0 4px rgba(0,91,191,0.1)';
+    const circle = el.querySelector('.step-index');
+    if (circle) {
+      circle.className = 'step-index w-8 h-8 rounded-full signature-gradient flex items-center justify-center text-white text-sm font-bold';
+    }
+    const out = document.getElementById(`wallet-output-${steps[i]}`);
+    if (out) out.classList.remove('is-idle');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// Load blockchain block count for viz
+(async () => {
+  try {
+    const res = await fetch('/api/blockchain/blocks', { headers: {'Authorization': `Bearer ${token}`} });
+    if (res.ok) {
+      const blocks = await res.json();
+      if (blocks.length > 0) {
+        const last = blocks[blocks.length - 1];
+        document.getElementById('block-progress').textContent = `${last.total_transactions}/15`;
+        const pct = (last.total_transactions / 15) * 100;
+        const bar = document.querySelector('[style*="width:20%"]');
+        if (bar) bar.style.width = pct + '%';
+      }
+    }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>

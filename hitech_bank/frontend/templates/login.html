@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HiTech Bank — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#005bbf","primary-container": "#1a73e8","on-primary": "#ffffff",
+        "surface": "#f8f9fa","surface-container-low": "#f3f4f5","surface-container-lowest": "#ffffff",
+        "surface-container-high": "#e7e8e9","surface-container": "#edeeef",
+        "on-surface": "#191c1d","on-surface-variant": "#414754","outline-variant": "#c1c6d6",
+        "error": "#ba1a1a","error-container": "#ffdad6","secondary": "#5b5f64"
+      },
+      fontFamily: { "headline": ["Manrope"], "body": ["Inter"] }
+    }
+  }
+}
+</script>
+<style>
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+.signature-gradient { background: linear-gradient(135deg, #005bbf 0%, #1a73e8 100%); }
+.soft-field { background: #f3f4f5; border: none; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.soft-field:focus { background: #fff; border-bottom-color: #005bbf; outline: none; }
+.tab-active { background: linear-gradient(135deg, #005bbf 0%, #1a73e8 100%); color: white; }
+.tab-inactive { background: #f3f4f5; color: #414754; }
+#otp-section { display: none; }
+</style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased min-h-screen flex items-center justify-center p-4">
+
+<!-- Background decoration -->
+<div class="fixed inset-0 overflow-hidden pointer-events-none">
+  <div class="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-10" style="background: radial-gradient(circle, #1a73e8, transparent)"></div>
+  <div class="absolute -bottom-32 -left-32 w-80 h-80 rounded-full opacity-10" style="background: radial-gradient(circle, #005bbf, transparent)"></div>
+</div>
+
+<div class="w-full max-w-md relative z-10">
+  <!-- Logo -->
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl signature-gradient mb-4 shadow-lg">
+      <span class="material-symbols-outlined text-white text-3xl">account_balance</span>
+    </div>
+    <h1 class="text-3xl font-bold font-headline text-on-surface">HiTech Bank</h1>
+    <p class="text-on-surface-variant text-sm mt-1">Blockchain-Secured Banking</p>
+  </div>
+
+  <!-- Card -->
+  <div class="bg-surface-container-lowest rounded-3xl p-8 shadow-[0px_8px_24px_rgba(25,28,29,0.08)]">
+    <!-- Tabs -->
+    <div class="flex rounded-2xl overflow-hidden mb-8 p-1 bg-surface-container-low gap-1">
+      <button onclick="switchTab('login')" id="tab-login" class="flex-1 py-2.5 rounded-xl font-bold text-sm tab-active transition-all font-body">Sign In</button>
+      <button onclick="switchTab('signup')" id="tab-signup" class="flex-1 py-2.5 rounded-xl font-bold text-sm tab-inactive transition-all font-body">Sign Up</button>
+    </div>
+
+    <!-- Step 1: Credentials -->
+    <div id="step-credentials">
+      <!-- LOGIN FORM -->
+      <div id="login-form">
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Full name</label>
+            <div class="flex items-center gap-2 soft-field rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-secondary text-xl">person</span>
+              <input id="login-name" type="text" placeholder="Name on your account" class="flex-1 bg-transparent text-on-surface placeholder-on-surface-variant/50 text-sm font-medium focus:outline-none"/>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Phone Number</label>
+            <div class="flex items-center gap-2 soft-field rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-secondary text-xl">phone</span>
+              <input id="login-phone" type="tel" placeholder="+91 98765 43210" class="flex-1 bg-transparent text-on-surface placeholder-on-surface-variant/50 text-sm font-medium focus:outline-none"/>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Password</label>
+            <div class="flex items-center gap-2 soft-field rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-secondary text-xl">lock</span>
+              <input id="login-password" type="password" placeholder="Enter password" class="flex-1 bg-transparent text-on-surface placeholder-on-surface-variant/50 text-sm font-medium focus:outline-none"/>
+              <button onclick="togglePwd('login-password')" class="text-secondary">
+                <span class="material-symbols-outlined text-xl">visibility</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <button onclick="requestOTP('login')" class="w-full mt-6 signature-gradient text-white font-bold py-4 rounded-2xl shadow-md active:scale-95 transition-all font-body flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined">send_to_mobile</span>
+          Send OTP & Continue
+        </button>
+      </div>
+
+      <!-- SIGNUP FORM -->
+      <div id="signup-form" class="hidden">
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Full Name</label>
+            <div class="flex items-center gap-2 soft-field rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-secondary text-xl">person</span>
+              <input id="signup-name" type="text" placeholder="Your full name" class="flex-1 bg-transparent text-on-surface placeholder-on-surface-variant/50 text-sm font-medium focus:outline-none"/>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Phone Number</label>
+            <div class="flex items-center gap-2 soft-field rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-secondary text-xl">phone</span>
+              <input id="signup-phone" type="tel" placeholder="+91 98765 43210" class="flex-1 bg-transparent text-on-surface placeholder-on-surface-variant/50 text-sm font-medium focus:outline-none"/>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Password</label>
+              <div class="flex items-center gap-2 soft-field rounded-xl px-3 py-3">
+                <input id="signup-password" type="password" placeholder="Password" class="flex-1 bg-transparent text-on-surface placeholder-on-surface-variant/50 text-sm font-medium focus:outline-none"/>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Txn PIN (4-digit)</label>
+              <div class="flex items-center gap-2 soft-field rounded-xl px-3 py-3">
+                <input id="signup-pin" type="password" maxlength="4" placeholder="PIN" class="flex-1 bg-transparent text-on-surface placeholder-on-surface-variant/50 text-sm font-medium focus:outline-none"/>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Bank</label>
+            <div class="flex items-center gap-2 soft-field rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-secondary text-xl">account_balance</span>
+              <select id="signup-bank" class="flex-1 bg-transparent text-on-surface text-sm font-medium focus:outline-none">
+                <option value="1">Bank A</option>
+                <option value="2">Bank B</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Wallet PIN (for digital signature)</label>
+            <div class="flex items-center gap-2 soft-field rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-secondary text-xl">key</span>
+              <input id="signup-wallet-pin" type="password" maxlength="6" placeholder="Wallet PIN" class="flex-1 bg-transparent text-on-surface placeholder-on-surface-variant/50 text-sm font-medium focus:outline-none"/>
+            </div>
+          </div>
+        </div>
+        <button onclick="requestOTP('signup')" class="w-full mt-6 signature-gradient text-white font-bold py-4 rounded-2xl shadow-md active:scale-95 transition-all font-body flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined">send_to_mobile</span>
+          Send OTP & Register
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: OTP Verification -->
+    <div id="otp-section" class="space-y-6">
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-3">
+          <span class="material-symbols-outlined text-primary text-3xl">sms</span>
+        </div>
+        <h3 class="font-bold text-lg font-headline">Verify OTP</h3>
+        <p class="text-on-surface-variant text-sm mt-1">Enter the 6-digit code sent to <span id="otp-phone-display" class="text-primary font-bold"></span></p>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">OTP Code</label>
+        <div class="flex items-center gap-2 soft-field rounded-xl px-4 py-3">
+          <span class="material-symbols-outlined text-secondary text-xl">dialpad</span>
+          <input id="otp-input" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit OTP" class="flex-1 bg-transparent text-on-surface placeholder-on-surface-variant/50 text-sm font-medium focus:outline-none"/>
+        </div>
+      </div>
+      <div id="otp-error" class="hidden bg-error-container text-error rounded-xl p-3 text-sm font-medium flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">error</span>
+        <span id="otp-error-msg"></span>
+      </div>
+      <button onclick="verifyOTP()" id="verify-btn" class="w-full signature-gradient text-white font-bold py-4 rounded-2xl shadow-md active:scale-95 transition-all font-body flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined">verified_user</span>
+        Verify & Continue
+      </button>
+      <button onclick="goBackToCredentials()" class="w-full text-on-surface-variant text-sm font-medium py-2 flex items-center justify-center gap-1">
+        <span class="material-symbols-outlined text-sm">arrow_back</span> Go Back
+      </button>
+    </div>
+
+    <!-- Error message -->
+    <div id="auth-error" class="hidden mt-4 bg-error-container text-error rounded-xl p-3 text-sm font-medium flex items-center gap-2">
+      <span class="material-symbols-outlined text-sm">error</span>
+      <span id="auth-error-msg"></span>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading" class="hidden mt-4 flex items-center justify-center gap-2 text-primary">
+      <div class="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-sm font-medium">Processing...</span>
+    </div>
+  </div>
+
+  <p class="text-center text-on-surface-variant text-xs mt-6">
+    Secured by Firebase OTP + EdDSA + Blockchain
+  </p>
+</div>
+
+<div id="recaptcha-container"></div>
+<script type="module" src="{{ url_for('static', filename='firebase.js') }}"></script>
+
+<script>
+let currentMode = 'login';
+let confirmationResult = null;
+
+function switchTab(tab) {
+  currentMode = tab;
+  document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
+  document.getElementById('tab-login').className = `flex-1 py-2.5 rounded-xl font-bold text-sm transition-all font-body ${tab === 'login' ? 'tab-active' : 'tab-inactive'}`;
+  document.getElementById('tab-signup').className = `flex-1 py-2.5 rounded-xl font-bold text-sm transition-all font-body ${tab === 'signup' ? 'tab-active' : 'tab-inactive'}`;
+  hideError();
+}
+
+function togglePwd(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function showError(msg) {
+  const el = document.getElementById('auth-error');
+  document.getElementById('auth-error-msg').textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function hideError() {
+  document.getElementById('auth-error').classList.add('hidden');
+}
+
+function setLoading(show) {
+  document.getElementById('loading').classList.toggle('hidden', !show);
+}
+
+async function requestOTP(mode) {
+  hideError();
+  if (!window.HiTechFirebase) {
+    showError('Firebase is still loading — wait a moment and try again.');
+    return;
+  }
+  let phone;
+  if (mode === 'login') {
+    const loginName = document.getElementById('login-name').value.trim();
+    phone = document.getElementById('login-phone').value.trim();
+    if (!loginName) { showError('Please enter your full name'); return; }
+    if (!document.getElementById('login-password').value) { showError('Please enter your password'); return; }
+  } else {
+    phone = document.getElementById('signup-phone').value.trim();
+    const name = document.getElementById('signup-name').value.trim();
+    const pwd = document.getElementById('signup-password').value;
+    const pin = document.getElementById('signup-pin').value;
+    if (!name || !phone || !pwd || !pin) { showError('Please fill all fields'); return; }
+    if (pin.length !== 4) { showError('PIN must be 4 digits'); return; }
+  }
+
+  phone = window.HiTechFirebase.normalizePhone(phone);
+  if (!phone || phone.length < 8) {
+    showError('Enter a valid phone number');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    confirmationResult = await window.HiTechFirebase.sendPhoneOtp(phone);
+    document.getElementById('otp-phone-display').textContent = phone;
+    document.getElementById('step-credentials').style.display = 'none';
+    document.getElementById('otp-section').style.display = 'block';
+  } catch(err) {
+    showError('Failed to send OTP: ' + (err && err.message ? err.message : String(err)));
+    window.HiTechFirebase.resetRecaptcha();
+  }
+  setLoading(false);
+}
+
+async function verifyOTP() {
+  const otp = document.getElementById('otp-input').value.trim();
+  if (otp.length !== 6) { 
+    document.getElementById('otp-error-msg').textContent = 'Enter 6-digit OTP';
+    document.getElementById('otp-error').classList.remove('hidden');
+    return; 
+  }
+
+  setLoading(true);
+  document.getElementById('otp-error').classList.add('hidden');
+
+  if (!window.HiTechFirebase || !confirmationResult) {
+    document.getElementById('otp-error-msg').textContent = 'Session expired — go back and send OTP again.';
+    document.getElementById('otp-error').classList.remove('hidden');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const idToken = await window.HiTechFirebase.confirmPhoneOtp(confirmationResult, otp);
+    if (currentMode === 'login') {
+      await doLogin(idToken);
+    } else {
+      await doSignup(idToken);
+    }
+  } catch(err) {
+    document.getElementById('otp-error-msg').textContent = 'Invalid OTP. Please try again.';
+    document.getElementById('otp-error').classList.remove('hidden');
+  }
+  setLoading(false);
+}
+
+async function doLogin(idToken) {
+  const name = document.getElementById('login-name').value.trim();
+  let phone = document.getElementById('login-phone').value.trim();
+  phone = window.HiTechFirebase.normalizePhone(phone);
+  const password = document.getElementById('login-password').value;
+
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      name,
+      phone: phone.replace(/^\+91/, '').replace(/\D/g, '') || phone,
+      password,
+      firebase_token: idToken
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) { showError(data.error || 'Login failed'); goBackToCredentials(); return; }
+
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('user', JSON.stringify(data.user));
+
+  if (data.user.is_admin) {
+    window.location.href = '/dashboard?admin_prompt=1';
+  } else {
+    window.location.href = '/dashboard';
+  }
+}
+
+async function doSignup(idToken) {
+  const name = document.getElementById('signup-name').value.trim();
+  let phone = document.getElementById('signup-phone').value.trim();
+  phone = window.HiTechFirebase.normalizePhone(phone);
+  const password = document.getElementById('signup-password').value;
+  const pin = document.getElementById('signup-pin').value;
+  const bank_id = document.getElementById('signup-bank').value;
+  const wallet_pin = document.getElementById('signup-wallet-pin').value || '0726';
+
+  const res = await fetch('/api/auth/signup', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      name,
+      phone: phone.replace(/^\+91/, '').replace(/\D/g, '') || phone,
+      password,
+      pin,
+      bank_id,
+      wallet_pin,
+      firebase_token: idToken
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) { showError(data.error || 'Signup failed'); goBackToCredentials(); return; }
+
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('user', JSON.stringify(data.user));
+  window.location.href = '/dashboard';
+}
+
+function goBackToCredentials() {
+  document.getElementById('step-credentials').style.display = 'block';
+  document.getElementById('otp-section').style.display = 'none';
+  document.getElementById('otp-error').classList.add('hidden');
+  confirmationResult = null;
+  if (window.HiTechFirebase) window.HiTechFirebase.resetRecaptcha();
+}
+</script>
+</body>
+</html>
